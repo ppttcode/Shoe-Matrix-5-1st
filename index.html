@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shoe Matrix v3.5 — SA × ER × Stability</title>
+<title>Shoe Matrix v3.6 — SA × ER × Stability</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap');
@@ -78,7 +78,7 @@
 </head>
 <body>
 
-  <h1>Shoe Matrix — SA × ER <span class="badge fix">v3.5 · หมายเหตุพับได้</span></h1>
+  <h1>Shoe Matrix — SA × ER <span class="badge fix">v3.6 · tooltip แสดงทุกรุ่นที่ซ้อนกัน</span></h1>
   <div class="sub">แกน X: Shock Absorption ส้นเท้า (SA) · แกน Y: Energy Return หน้าเท้า (ER%) · ขนาดจุด: Stability — จุดกลมสีตามแบรนด์</div>
 
   <input id="search" type="text" placeholder="🔍 พิมพ์ชื่อรุ่น เช่น Nimbus, Boston, Vomero...">
@@ -338,9 +338,25 @@ function initChart(){
         tooltip: {
           backgroundColor:'#161b22', borderColor:'#30363d', borderWidth:1, padding:8,
           titleColor:'#fff', bodyColor:'#c9d1d9',
+          bodyFont:{size:11}, titleFont:{size:11}, boxPadding:4,
+          // จุดที่ซ้อนกันจะแสดงทุกรุ่น · รุ่นที่อยู่ในเพซขึ้นก่อน
+          itemSort: (a, b) => matchesPace(b.raw.raw) - matchesPace(a.raw.raw),
           callbacks: {
-            title: items => items[0].raw.raw.name,
-            label: item => `${item.raw.raw.role} | เพซ ${item.raw.raw.pace} | Stab ${item.raw.raw.stab ?? '–'}`
+            title: items => items.length > 1 ? `${items.length} รุ่นซ้อนกันตรงนี้` : items[0].raw.raw.name,
+            label: item => {
+              const s = item.raw.raw;
+              const tag = nearestSet.has(s.name) ? '  · ใกล้สุด' : matchesPace(s) ? '' : '  · นอกเพซ';
+              return s.name + tag;
+            },
+            afterLabel: item => {
+              const s = item.raw.raw;
+              return `   ${s.role} · ${s.pace} · Stab ${s.stab ?? '–'}`;
+            },
+            // กล่องสี: ในเพซ = ทึบสีแบรนด์ · นอกเพซ = กรอบสีแบรนด์ ข้างในโปร่ง
+            labelColor: item => {
+              const s = item.raw.raw, c = BRAND_COLOR[s.brand];
+              return { borderColor: c, backgroundColor: matchesPace(s) ? c : 'rgba(0,0,0,0)', borderWidth: 2 };
+            }
           }
         }
       },
